@@ -1,6 +1,6 @@
 const { kord } = require(process.cwd() + "/core");
 const fs = require("fs");
-const path = process.cwd() + "/memory_probuddy_full.json";
+const path = process.cwd() + "/memory_probuddy_ultimate.json";
 
 // Load memory
 let memory = {};
@@ -34,7 +34,7 @@ const trivia = [
   { q: "The largest planet?", a: "jupiter" },
 ];
 
-// Mega Pidgin Jokes
+// Pidgin jokes
 const jokes = [
   "😂 Why e phone waka go school? To sabi class better.",
   "🤣 I try code without bug… I just wake up.",
@@ -54,7 +54,7 @@ const jokes = [
   "🤣 My neighbor dey sing pass microphone 😆",
 ];
 
-// Mega Pidgin Quotes / Advice
+// Pidgin motivational quotes
 const quotes = [
   "💡 If today hard, tomorrow go easy, just hold on.",
   "💪 Small small progress na better pass zero.",
@@ -73,24 +73,63 @@ const quotes = [
   "🌟 Smile small, e dey lighten body & mind.",
 ];
 
-// Typing simulation with random delay
+// Riddles
+const riddles = [
+  { q: "I get keys but I no fit open door. Wetin I be?", a: "piano" },
+  { q: "What dey always dey run but e no dey waka?", a: "water" },
+  { q: "I dey full of holes but I dey hold water. Wetin I be?", a: "sponge" },
+];
+
+// Short stories
+const stories = [
+  "Once upon a time, one boy waka enter market, e see mango wey dey shine like gold…",
+  "Omo, one man try catch cat wey dey run, e slip enter mud 😆…",
+  "Ahhh, one lady teach me say small small savings dey grow like tree 🌳…",
+];
+
+// Live chat mode default
+const chatModeDefault = true;
+
+// Typing simulation
 async function typingSend(m, text) {
-  const ms = 1000 + Math.floor(Math.random() * 4000);
+  const ms = 1000 + Math.floor(Math.random() * 3000);
   await delay(ms);
   return m.send(text);
 }
 
-// Remember last 3 messages for context
+// Remember last 3 messages
 function rememberMessage(user, msg) {
   if (!user.lastMessages) user.lastMessages = [];
   user.lastMessages.push(msg);
   if (user.lastMessages.length > 3) user.lastMessages.shift();
 }
 
+// Safe math eval
+function safeEval(expr) {
+  try {
+    const result = Function(`"use strict";return (${expr})`)();
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+// Fake weather info
+function fakeWeather(city) {
+  const temp = 25 + Math.floor(Math.random() * 10);
+  return `🌤 ${city} dey ${temp}°C today`;
+}
+
+// Roll dice
+function rollDice() {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+// Core Buddy command
 kord(
   {
     cmd: "buddy",
-    desc: "Pro Buddy Max Full Pidgin Live Chat 😎",
+    desc: "Pro Buddy Max Ultimate Pidgin Live Chat 😎",
     fromMe: false,
     type: "fun"
   },
@@ -105,7 +144,8 @@ kord(
       level: 1,
       reminders: [],
       game: {},
-      lastMessages: []
+      lastMessages: [],
+      chatMode: chatModeDefault
     };
 
     const msg = text?.toLowerCase();
@@ -123,9 +163,10 @@ kord(
 
     rememberMessage(user, msg);
 
-    // ---- COMMANDS ----
+    // ------------------- COMMANDS -------------------
+
     if (msg === "help") {
-      return typingSend(m, `📜 Buddy Pro Max Commands (Pidgin Version):
+      return typingSend(m, `📜 Buddy Pro Max Ultimate Commands:
 1️⃣ .buddy name <name>
 2️⃣ .buddy favorite <thing>
 3️⃣ .buddy hobby <thing>
@@ -142,32 +183,39 @@ kord(
 1️⃣4️⃣ .buddy trivia
 1️⃣5️⃣ .buddy answer <text>
 1️⃣6️⃣ .buddy stats
-1️⃣7️⃣ .buddy features`);
+1️⃣7️⃣ .buddy features
+1️⃣8️⃣ .buddy translate <text>
+1️⃣9️⃣ .buddy weather <city>
+2️⃣0️⃣ .buddy insult <name>
+2️⃣1️⃣ .buddy compliment <name>
+2️⃣2️⃣ .buddy riddle
+2️⃣3️⃣ .buddy story
+2️⃣4️⃣ .buddy daily
+2️⃣5️⃣ .buddy chatmode <on/off>
+2️⃣6️⃣ .buddy roll <dice>
+2️⃣7️⃣ .buddy math <expression>
+2️⃣8️⃣ .buddy moodcheck
+2️⃣9️⃣ .buddy facts
+3️⃣0️⃣ .buddy storytime`);
     }
 
-    // Name
+    // ------------------- PERSONAL INFO -------------------
     if (msg.startsWith("name ")) {
       user.name = text.slice(5).trim();
       saveMemory();
       return typingSend(m, `✅ Omo, I go dey call you ${user.name} from now`);
     }
-
-    // Favorite
     if (msg.startsWith("favorite ")) {
       user.favorite = text.slice(9).trim();
       saveMemory();
       return typingSend(m, `🎉 I don remember say your favorite na ${user.favorite}`);
     }
-
-    // Hobby
     if (msg.startsWith("hobby ")) {
       const hobby = text.slice(6).trim();
       user.hobbies.push(hobby);
       saveMemory();
       return typingSend(m, `✅ I don add hobby: ${hobby}`);
     }
-
-    // Info
     if (msg === "info") {
       return typingSend(m, `📋 Your info:
 Name: ${user.name || "N/A"}
@@ -178,7 +226,7 @@ Level: ${user.level}
 XP: ${user.xp}`);
     }
 
-    // Mood
+    // ------------------- MOOD -------------------
     if (msg.startsWith("mood ")) {
       user.mood = text.slice(5).trim();
       saveMemory();
@@ -186,12 +234,13 @@ XP: ${user.xp}`);
     }
     if (msg === "mood") return typingSend(m, `🙂 Your last mood na "${user.mood}"`);
 
-    // Reminders
+    // ------------------- REMINDERS -------------------
     if (msg.startsWith("remind ")) {
       const parts = text.slice(7).trim().split(" ");
       const delayTime = parseTime(parts[0]);
       const task = parts.slice(1).join(" ");
-      if (!delayTime || !task) return typingSend(m, "❌ Usage: .buddy remind 10s Drink water");
+      if (!delayTime || !task)
+        return typingSend(m, "❌ Wrong usage! Example: `.buddy remind 10s Drink water`");
       const reminder = { task, time: Date.now() + delayTime };
       user.reminders.push(reminder);
       saveMemory();
@@ -204,7 +253,6 @@ XP: ${user.xp}`);
       }, delayTime);
       return typingSend(m, `⏳ Reminder don set: "${task}" for ${parts[0]}`);
     }
-
     if (msg === "reminders") {
       if (!user.reminders.length) return typingSend(m, "📭 You no get active reminder");
       let list = "⏳ Your reminders:\n";
@@ -214,27 +262,25 @@ XP: ${user.xp}`);
       });
       return typingSend(m, list);
     }
-
     if (msg.startsWith("delreminder ")) {
       const num = parseInt(msg.split(" ")[1]);
       if (isNaN(num) || num < 1 || num > user.reminders.length)
-        return typingSend(m, "❌ Invalid reminder number");
+        return typingSend(m, "❌ Wrong usage! Example: `.buddy delreminder 1`");
       const removed = user.reminders.splice(num - 1, 1);
       saveMemory();
       return typingSend(m, `✅ I don remove reminder: ${removed[0].task}`);
     }
 
-    // Joke
+    // ------------------- JOKES & QUOTES -------------------
     if (msg.includes("joke")) return typingSend(m, randomItem(jokes));
-
-    // Advice
     if (msg.includes("advice")) return typingSend(m, randomItem(quotes));
 
-    // Mini-games
+    // ------------------- MINI-GAMES -------------------
     if (msg.startsWith("rps ")) {
       const choice = msg.split(" ")[1];
       const valid = ["rock", "paper", "scissors"];
-      if (!valid.includes(choice)) return typingSend(m, "❌ Choose rock, paper, or scissors");
+      if (!valid.includes(choice))
+        return typingSend(m, "❌ Invalid choice! Example: `.buddy rps rock`");
       const botChoice = randomItem(valid);
       let result = "";
       if (choice === botChoice) result = "🤝 Na tie!";
@@ -249,10 +295,10 @@ XP: ${user.xp}`);
 
     if (msg === "coin") return typingSend(m, `🪙 Coin flip: ${Math.random() < 0.5 ? "Heads ooo" : "Tails 😎"}`);
 
-    // Guess
     if (msg.startsWith("guess ")) {
       const guess = parseInt(msg.split(" ")[1]);
-      if (isNaN(guess) || guess < 1 || guess > 20) return typingSend(m, "❌ Number must be 1-20");
+      if (isNaN(guess) || guess < 1 || guess > 20)
+        return typingSend(m, "❌ Number must be between 1-20. Example: `.buddy guess 12`");
       const number = Math.floor(Math.random() * 20) + 1;
       if (guess === number) {
         user.xp += 15;
@@ -262,14 +308,12 @@ XP: ${user.xp}`);
       else return typingSend(m, "📉 Too high oh, try again");
     }
 
-    // Trivia
     if (msg === "trivia") {
       const q = randomItem(trivia);
       user.game.triviaAnswer = q.a;
       saveMemory();
       return typingSend(m, `❓ Trivia: ${q.q} (reply with .buddy answer <your answer>)`);
     }
-
     if (msg.startsWith("answer ")) {
       const answer = text.slice(7).trim().toLowerCase();
       if (!user.game.triviaAnswer) return typingSend(m, "❌ No active trivia question");
@@ -285,7 +329,7 @@ XP: ${user.xp}`);
       }
     }
 
-    // Stats
+    // ------------------- STATS & FEATURES -------------------
     if (msg === "stats") {
       return typingSend(m, `📊 Stats:
 XP: ${user.xp}
@@ -295,37 +339,84 @@ Hobbies: ${user.hobbies.join(", ") || "N/A"}
 Favorite: ${user.favorite || "N/A"}`);
     }
 
-    // Features
     if (msg === "features") {
       const featureList = `
-📜 **Buddy Pro Max (Pidgin) Features & Commands**
-
-1️⃣ Personalized Chat
-2️⃣ Mood System
-3️⃣ XP & Level System
-4️⃣ Reminders
-5️⃣ Mini-Games
-6️⃣ Fun Commands
-7️⃣ Feature Tracker & Upcoming Upgrades
-8️⃣ Live Chat Mode 😎
-9️⃣ Mega Jokes & Quotes
+📜 Buddy Pro Max Ultimate Features & Commands
+- Personalized Chat
+- Mood System
+- XP & Level System
+- Reminders
+- Mini-Games
+- Mega Jokes & Quotes
+- Translate / Weather / Riddle / Story / Daily / Math / Roll / Facts
+- Live Chat Mode 😎
 `;
       return typingSend(m, featureList);
     }
 
-    // Live Chat Fallback
-    const fallbackReplies = [
-      `🙂 I dey listen${user.name ? ", " + user.name : ""}…`,
-      `😎 Omo, true talk oh!`,
-      `Omo, I dey feel you oh 😄`,
-      `Ahhh, I sabi say ${user.favorite || "this one"} dey cool!`,
-      `😌 Calm down small, I dey with you`,
-      `😔 No wahala, I dey your side oh`,
-      randomItem(jokes),
-      randomItem(quotes),
-    ];
+    // ------------------- TRANSLATE -------------------
+    if (msg.startsWith("translate ")) {
+      const txt = text.slice(10).trim();
+      if (!txt) return typingSend(m, "❌ Usage: `.buddy translate Hello, how are you?`");
+      // Simple fake translation
+      return typingSend(m, `🌐 Translation: ${txt.split(" ").map(w => w+"o").join(" ")}`);
+    }
 
-    saveMemory();
-    return typingSend(m, randomItem(fallbackReplies));
-  }
-);
+    // ------------------- WEATHER -------------------
+    if (msg.startsWith("weather ")) {
+      const city = text.slice(8).trim();
+      if (!city) return typingSend(m, "❌ Usage: `.buddy weather Lagos`");
+      return typingSend(m, fakeWeather(city));
+    }
+
+    // ------------------- INSULT & COMPLIMENT -------------------
+    if (msg.startsWith("insult ")) {
+      const name = text.slice(7).trim();
+      if (!name) return typingSend(m, "❌ Usage: `.buddy insult Peter`");
+      const insults = [
+        `${name}, your head dey empty like internet wey never load`,
+        `${name}, your fashion dey confuse like spaghetti`,
+        `${name}, your brain dey sleep pass your body 😆`
+      ];
+      return typingSend(m, randomItem(insults));
+    }
+
+    if (msg.startsWith("compliment ")) {
+      const name = text.slice(11).trim();
+      if (!name) return typingSend(m, "❌ Usage: `.buddy compliment Sarah`");
+      const compliments = [
+        `${name}, you fine pass everybody wey I don see today!`,
+        `${name}, you sabi well well 😎`,
+        `${name}, your smile dey shine like sun 🌞`
+      ];
+      return typingSend(m, randomItem(compliments));
+    }
+
+    // ------------------- RIDDLE & STORY -------------------
+    if (msg === "riddle") {
+      const r = randomItem(riddles);
+      user.game.riddleAnswer = r.a;
+      saveMemory();
+      return typingSend(m, `❓ Riddle: ${r.q} (reply with .buddy answer <your answer>)`);
+    }
+
+    if (msg === "story") return typingSend(m, randomItem(stories));
+
+    // ------------------- DAILY -------------------
+    if (msg === "daily") {
+      user.xp += 50;
+      saveMemory();
+      return typingSend(m, "🎁 You don collect daily 50 XP! 😎");
+    }
+
+    // ------------------- CHATMODE -------------------
+    if (msg.startsWith("chatmode ")) {
+      const mode = text.slice(9).trim();
+      if (!["on","off"].includes(mode)) return typingSend(m, "❌ Usage: `.buddy chatmode on/off`");
+      user.chatMode = mode === "on";
+      saveMemory();
+      return typingSend(m, `✅ Chat mode set to ${mode}`);
+    }
+
+    // ------------------- ROLL & MATH -------------------
+    if (msg === "roll" || msg
