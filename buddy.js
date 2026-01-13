@@ -1,26 +1,20 @@
 const { kord } = require(process.cwd() + "/core");
 const fs = require("fs");
-const path = process.cwd() + "/memory_probuddy_plus.json";
+const path = process.cwd() + "/memory_probuddy_all.json";
 
-// Load or initialize memory
+// Load memory
 let memory = {};
-if (fs.existsSync(path)) {
-  memory = JSON.parse(fs.readFileSync(path));
-} else {
-  fs.writeFileSync(path, JSON.stringify(memory, null, 2));
-}
+if (fs.existsSync(path)) memory = JSON.parse(fs.readFileSync(path));
+else fs.writeFileSync(path, JSON.stringify(memory, null, 2));
 
-// Save memory
 function saveMemory() {
   fs.writeFileSync(path, JSON.stringify(memory, null, 2));
 }
 
-// Helper: random item
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Parse time like 10s or 5m
 function parseTime(time) {
   if (!time) return null;
   const match = time.match(/^(\d+)(s|m)$/);
@@ -29,69 +23,83 @@ function parseTime(time) {
   return match[2] === "s" ? value * 1000 : value * 60000;
 }
 
+const trivia = [
+  { q: "Capital of France?", a: "paris" },
+  { q: "2 + 2 * 2?", a: "6" },
+  { q: "The largest planet?", a: "jupiter" },
+];
+
 kord(
   {
     cmd: "buddy",
-    desc: "Pro Buddy with mood, reminders, XP, games, and chat",
+    desc: "Ultimate Pro Buddy Max plugin - chat, games, reminders, XP, mood, and upgrades",
     fromMe: false,
     type: "fun"
   },
   async (m, text) => {
     const userId = m.sender;
-    if (!memory[userId])
-      memory[userId] = {
-        name: null,
-        favorite: null,
-        hobbies: [],
-        lastMessage: null,
-        mood: null,
-        xp: 0,
-        reminders: []
-      };
+    if (!memory[userId]) memory[userId] = {
+      name: null,
+      favorite: null,
+      hobbies: [],
+      lastMessage: null,
+      mood: "neutral",
+      xp: 0,
+      level: 1,
+      reminders: [],
+      game: {}
+    };
 
-    if (!text) return m.send("🙂 Hey! I’m your Pro Buddy. Use `.buddy help` for commands.");
+    if (!text) return m.send("🙂 Hey! I’m your Pro Buddy Max. Use `.buddy help` for commands.");
 
     const msg = text.toLowerCase();
     const user = memory[userId];
 
-    // Increment XP per message
-    user.xp += 5;
+    // Add XP
+    user.xp += 10;
+    const newLevel = Math.floor(user.xp / 100) + 1;
+    if (newLevel > user.level) {
+      user.level = newLevel;
+      m.send(`🎉 Congrats ${user.name || ""}, you leveled up to Level ${user.level}!`);
+    }
 
-    // Commands
+    // ---- COMMANDS ----
     if (msg === "help") {
-      return m.send(`📜 Pro Buddy Commands:
-1️⃣ .buddy name <your name>
+      return m.send(`📜 Buddy Pro Max Commands:
+1️⃣ .buddy name <name>
 2️⃣ .buddy favorite <thing>
 3️⃣ .buddy hobby <thing>
 4️⃣ .buddy info
-5️⃣ .buddy mood <mood> / .buddy mood
-6️⃣ .buddy remind <time> <task>
+5️⃣ .buddy mood <happy/sad/angry> / .buddy mood
+6️⃣ .buddy remind <10s/5m> <task>
 7️⃣ .buddy reminders
 8️⃣ .buddy delreminder <number>
 9️⃣ .buddy joke
 🔟 .buddy advice
 1️⃣1️⃣ .buddy rps <rock/paper/scissors>
 1️⃣2️⃣ .buddy coin
-1️⃣3️⃣ .buddy stats`);
+1️⃣3️⃣ .buddy guess <1-20>
+1️⃣4️⃣ .buddy trivia
+1️⃣5️⃣ .buddy answer <text>
+1️⃣6️⃣ .buddy stats
+1️⃣7️⃣ .buddy features`);
     }
 
-    // Set name
+    // Name
     if (msg.startsWith("name ")) {
-      const name = text.slice(5).trim();
-      user.name = name;
+      user.name = text.slice(5).trim();
       saveMemory();
-      return m.send(`✅ Got it! I’ll call you ${name}`);
+      return m.send(`✅ Got it! I’ll call you ${user.name}`);
     }
 
-    // Set favorite
+    // Favorite
     if (msg.startsWith("favorite ")) {
-      const fav = text.slice(9).trim();
-      user.favorite = fav;
+      user.favorite = text.slice(9).trim();
       saveMemory();
-      return m.send(`🎉 Cool! I’ll remember your favorite thing is ${fav}`);
+      return m.send(`🎉 I’ll remember your favorite: ${user.favorite}`);
     }
 
-    // Add hobby
+    // Hobby
     if (msg.startsWith("hobby ")) {
       const hobby = text.slice(6).trim();
       user.hobbies.push(hobby);
@@ -105,20 +113,18 @@ kord(
 Name: ${user.name || "N/A"}
 Favorite: ${user.favorite || "N/A"}
 Hobbies: ${user.hobbies.join(", ") || "N/A"}
-Mood: ${user.mood || "N/A"}
-Last message: ${user.lastMessage || "N/A"}`);
+Mood: ${user.mood || "neutral"}
+Level: ${user.level}
+XP: ${user.xp}`);
     }
 
     // Mood
     if (msg.startsWith("mood ")) {
-      const mood = text.slice(5).trim();
-      user.mood = mood;
+      user.mood = text.slice(5).trim();
       saveMemory();
-      return m.send(`🙂 Mood set to "${mood}"`);
+      return m.send(`🙂 Mood set to "${user.mood}"`);
     }
-    if (msg === "mood") {
-      return m.send(`🙂 Your last mood: "${user.mood || "N/A"}"`);
-    }
+    if (msg === "mood") return m.send(`🙂 Last mood: "${user.mood}"`);
 
     // Reminders
     if (msg.startsWith("remind ")) {
@@ -126,12 +132,9 @@ Last message: ${user.lastMessage || "N/A"}`);
       const delay = parseTime(parts[0]);
       const task = parts.slice(1).join(" ");
       if (!delay || !task) return m.send("❌ Usage: .buddy remind 10s Drink water");
-
       const reminder = { task, time: Date.now() + delay };
       user.reminders.push(reminder);
       saveMemory();
-
-      // Schedule reminder
       setTimeout(async () => {
         try {
           await m.send(`🔔 Reminder: "${task}"`);
@@ -139,8 +142,7 @@ Last message: ${user.lastMessage || "N/A"}`);
           saveMemory();
         } catch (e) {}
       }, delay);
-
-      return m.send(`⏳ Reminder set for "${task}" in ${parts[0]}`);
+      return m.send(`⏳ Reminder set: "${task}" in ${parts[0]}`);
     }
 
     if (msg === "reminders") {
@@ -183,7 +185,7 @@ Last message: ${user.lastMessage || "N/A"}`);
       return m.send(randomItem(advices));
     }
 
-    // Games
+    // Mini-games
     if (msg.startsWith("rps ")) {
       const choice = msg.split(" ")[1];
       const valid = ["rock", "paper", "scissors"];
@@ -200,26 +202,84 @@ Last message: ${user.lastMessage || "N/A"}`);
       return m.send(`You: ${choice}\nMe: ${botChoice}\n${result}`);
     }
 
-    if (msg === "coin") {
-      return m.send(`🪙 Coin flip: ${Math.random() < 0.5 ? "Heads" : "Tails"}`);
+    if (msg === "coin") return m.send(`🪙 Coin flip: ${Math.random() < 0.5 ? "Heads" : "Tails"}`);
+
+    // Guess number
+    if (msg.startsWith("guess ")) {
+      const guess = parseInt(msg.split(" ")[1]);
+      if (isNaN(guess) || guess < 1 || guess > 20) return m.send("❌ Number must be 1-20");
+      const number = Math.floor(Math.random() * 20) + 1;
+      if (guess === number) {
+        user.xp += 15;
+        saveMemory();
+        return m.send(`🎉 Correct! Number was ${number}. You earned 15 XP`);
+      } else if (guess < number) return m.send("📈 Too low! Try again");
+      else return m.send("📉 Too high! Try again");
+    }
+
+    // Trivia
+    if (msg === "trivia") {
+      const q = randomItem(trivia);
+      user.game.triviaAnswer = q.a;
+      saveMemory();
+      return m.send(`❓ Trivia: ${q.q} (reply with .buddy answer <your answer>)`);
+    }
+
+    if (msg.startsWith("answer ")) {
+      const answer = text.slice(7).trim().toLowerCase();
+      if (!user.game.triviaAnswer) return m.send("❌ No active trivia question");
+      if (answer === user.game.triviaAnswer) {
+        user.xp += 20;
+        user.game.triviaAnswer = null;
+        saveMemory();
+        return m.send("🎉 Correct! You earned 20 XP");
+      } else {
+        user.game.triviaAnswer = null;
+        saveMemory();
+        return m.send("❌ Wrong! Better luck next time");
+      }
     }
 
     // Stats
     if (msg === "stats") {
-      return m.send(`📊 Your stats:
+      return m.send(`📊 Stats:
 XP: ${user.xp}
-Mood: ${user.mood || "N/A"}
+Level: ${user.level}
+Mood: ${user.mood || "neutral"}
 Hobbies: ${user.hobbies.join(", ") || "N/A"}
 Favorite: ${user.favorite || "N/A"}`);
     }
 
-    // Personalized chat fallback
-    let reply = `🙂 I’m listening${user.name ? ", " + user.name : ""}…`;
-    if (user.favorite && msg.includes("what do you think")) {
-      reply = `😎 I know you love ${user.favorite}, so that’s awesome!`;
+    // Features command
+    if (msg === "features") {
+      const featureList = `
+📜 **Buddy Pro Max Features & Commands**
+
+1️⃣ Personalized Chat
+2️⃣ Mood System
+3️⃣ XP & Level System
+4️⃣ Reminders
+5️⃣ Mini-Games
+6️⃣ Fun Commands
+7️⃣ Feature Tracker & Upcoming Upgrades
+
+🚀 Upcoming Upgrades:
+- Daily XP & streaks
+- Custom buddy personalities
+- Mood-aware mini-games
+- Leaderboards for all users
+- Recurring reminders
+`;
+      return m.send(featureList);
     }
 
-    // Save last message & memory
+    // Personalized fallback
+    let reply = `🙂 I’m listening${user.name ? ", " + user.name : ""}…`;
+    if (user.favorite && msg.includes("what do you think")) reply = `😎 I know you love ${user.favorite}, so that’s awesome!`;
+    if (user.mood === "sad") reply += " 😔 Stay strong, I’m with you!";
+    if (user.mood === "happy") reply += " 😄 I love your energy!";
+    if (user.mood === "angry") reply += " 😌 Take a deep breath… I got you";
+
     user.lastMessage = text;
     saveMemory();
 
