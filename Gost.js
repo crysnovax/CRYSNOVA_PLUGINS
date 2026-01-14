@@ -1,5 +1,3 @@
-[JLD PART 1 / 3]
-
 /* [GOST AI v2 — FULL INTEGRATED VERSION] */
 
 const fs = require("fs");
@@ -62,12 +60,8 @@ function setChatPrefs(m,patch){ const db=readJSON(PREF_FILE,{users:{},chats:{}})
 function memCap(){ const v=parseInt(getVar("GOST_MEM","24"),10); return Math.max(8,Math.min(80,Number.isFinite(v)?v:24)) }
 function loadMem(m){ const db=readJSON(MEM_FILE,{users:{}}); return db.users[ukey(m)]||[] }
 function saveMem(m,arr){ const db=readJSON(MEM_FILE,{users:{}}); db.users[ukey(m)]=arr; writeJSON(MEM_FILE,db) }
-functio
-[JLD PART 2 / 3]
-
-n pushMem(m,role,content){ const cap=memCap(); const arr=loadMem(m); arr.push({role,content:String(content||"").slice(0,4000),ts:Date.now()}); while(arr.length>cap) arr.shift(); saveMem(m,arr) }
+function pushMem(m,role,content){ const cap=memCap(); const arr=loadMem(m); arr.push({role,content:String(content||"").slice(0,4000),ts:Date.now()}); while(arr.length>cap) arr.shift(); saveMem(m,arr) }
 function clearMem(m){ const db=readJSON(MEM_FILE,{users:{}}); delete db.users[ukey(m)]; writeJSON(MEM_FILE,db) }
-
 /* ----------------- COOLDOWN ----------------- */
 const COOLDOWN=new Map();
 function cdSec(){ const v=parseInt(getVar("GOST_COOLDOWN","3"),10); return Math.max(0,Math.min(30,Number.isFinite(v)?v:3)) }
