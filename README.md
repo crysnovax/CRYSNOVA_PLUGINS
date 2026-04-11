@@ -1,5 +1,4 @@
-`save this as` ```index.js```
-```
+
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -282,5 +281,4 @@ main().catch(err => {
     rl.close();
     process.exit(1);
 });
-```
 
